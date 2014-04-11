@@ -98,7 +98,7 @@ module.exports = (robot) ->
 
       if results.length > 1
         msg.send """Multiple results:
-          #{ ([r.FirstName, r.LastName, r.EMailAddress].join ' ' for r in results[0..4]).join "\n" } """
+          #{ (["#{r.FirstName} #{r.LastName}", r.EMailAddress, r.Phone, "#{exec_command_api}OpenContact/ContactID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
       else if results.length == 1
         result = results[0]
         msg.send """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
@@ -117,7 +117,7 @@ module.exports = (robot) ->
 
       if results.length > 1
         msg.send """Multiple results:
-          #{ (r.AccountName for r in results).join ', ' } """
+          #{ ([r.AccountName, "#{exec_command_api}OpenAccount/AccountID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
       else if results.length == 1
         result = results[0]
         msg.send """🏢  #{result.AccountName}

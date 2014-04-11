@@ -121,5 +121,5 @@ module.exports = (robot) ->
       else if results.length == 1
         result = results[0]
         msg.reply """🏢  #{result.AccountName}
-          📄  #{exec_command_api}OpenAccount/AccountID/#{result.AccountNumber}
-          🎫  #{exec_command_api}NewTicket/AccountID/#{result.AccountNumber}"""
+          📄  #{exec_command_api}OpenAccount/AccountID/#{result.id}
+          🎫  #{exec_command_api}NewTicket/AccountID/#{result.id}"""

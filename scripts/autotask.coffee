@@ -70,7 +70,7 @@ class AutotaskAPI
 
 
 module.exports = (robot) ->
-  exec_command_api = 'https://ww7.autotask.net/Autotask/AutotaskExtend/ExecuteCommand.aspx?'
+  exec_command_api = 'http://tpmd.co/at/'
   autotask_api = new AutotaskAPI robot
 
   robot.hear /(T\d{8}\.\d+)/, (msg) ->
@@ -84,7 +84,7 @@ module.exports = (robot) ->
         msg.send "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
           "⏳  `#{new Date(result.LastActivityDate).toDateString()}` " +
           "💣  `#{new Date(result.DueDateTime).toDateString()}`\n" +
-          "#{exec_command_api}Code=OpenTicketDetail&TicketNumber=#{result.TicketNumber}"
+          "#{exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}"
 
   robot.hear /^(lastname|email) (.+)/, (msg) ->
     field = if msg.match[1] == 'lastname' then 'lastname' else 'emailaddress'
@@ -103,8 +103,8 @@ module.exports = (robot) ->
         result = results[0]
         msg.reply """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
           📞  #{result.Phone}
-          📄  #{exec_command_api}Code=OpenContact&ContactID=#{result.id}
-          🎫  #{exec_command_api}Code=NewTicket&Phone=#{result.Phone}"""
+          📄  #{exec_command_api}OpenContact/ContactID/#{result.id}
+          🎫  #{exec_command_api}NewTicket/Phone/#{result.Phone}"""
 
   robot.hear /^account (.+)/, (msg) ->
     params =
@@ -121,5 +121,5 @@ module.exports = (robot) ->
       else if results.length == 1
         result = results[0]
         msg.reply """🏢  #{result.AccountName}
-          📄  #{exec_command_api}Code=OpenAccount&AccountID=#{result.AccountNumber}
-          🎫  #{exec_command_api}Code=NewTicket&AccountID=#{result.AccountNumber}"""
+          📄  #{exec_command_api}OpenAccount/AccountID/#{result.AccountNumber}
+          🎫  #{exec_command_api}NewTicket/AccountID/#{result.AccountNumber}"""

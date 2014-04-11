@@ -56,9 +56,10 @@ class AutotaskAPI
 
     query_xml = mustache.render @query_xml_template, vars
 
-  query: (entity, field, expression, output, op) ->
-    query_xml = @build_query_xml_template(entity, field,
-      expression, op)
+  query: (params, output) ->
+    query_xml = @build_query_xml_template(params.entity, params.field,
+      params.expression, params.op)
+    console.log query_xml
 
     soap.createClient config.wsdl, (err, client) ->
       client.setSecurity new soap.BasicAuthSecurity config.user,
@@ -73,15 +74,52 @@ module.exports = (robot) ->
   autotask_api = new AutotaskAPI robot
 
   robot.hear /(T\d{8}\.\d+)/, (msg) ->
-    ticket = msg.match[1]
-    autotask_api.query 'ticket', 'ticketnumber', ticket, (results) ->
+    params = 
+      entity: 'ticket'
+      field: 'ticketnumber'
+      expression: msg.match[1]
+    autotask_api.query params, (results) ->
       result = results[0]
       if result
-        msg.send "*#{result.TicketNumber}:* #{result.Title}\n" +
-          "⏳ `#{new Date(result.LastActivityDate).toDateString()}` " +
-          "💣 `#{new Date(result.DueDateTime).toDateString()}`\n" +
-          "#{exec_command_api}Code=OpenTicketDetail&TicketNumber=#{ticket}"
+        msg.send "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
+          "⏳  `#{new Date(result.LastActivityDate).toDateString()}` " +
+          "💣  `#{new Date(result.DueDateTime).toDateString()}`\n" +
+          "#{exec_command_api}Code=OpenTicketDetail&TicketNumber=#{result.TicketNumber}"
 
-  robot.respond /contact ([\w\.+-]+@[\w\.-]+\.\w+)/, (msg) ->
-    email = msg.match[1]
-    msg.reply "Contact Page: #{exec_command_api}Code=OpenContact&Email=#{email}"
+  robot.hear /^(lastname|email) (.+)/, (msg) ->
+    field = if msg.match[1] == 'lastname' then 'lastname' else 'emailaddress'
+    params =
+      entity: 'contact'
+      field: field
+      expression: msg.match[2]
+      op: 'beginswith'
+    autotask_api.query params, (results) ->
+      return msg.reply 'No results.' unless results?
+
+      if results.length > 1
+        msg.reply """Multiple results:
+          #{ ([r.FirstName, r.LastName, r.EMailAddress].join ' ' for r in results[0..4]).join "\n" } """
+      else if results.length == 1
+        result = results[0]
+        msg.reply """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
+          📞  #{result.Phone}
+          📄  #{exec_command_api}Code=OpenContact&ContactID=#{result.id}
+          🎫  #{exec_command_api}Code=NewTicket&Phone=#{result.Phone}"""
+
+  robot.hear /^account (.+)/, (msg) ->
+    params =
+      entity: 'account'
+      field: 'accountname'
+      expression: msg.match[1]
+      op: 'beginswith'
+    autotask_api.query params, (results) ->
+      return msg.reply 'No results.' unless results?
+
+      if results.length > 1
+        msg.reply """Multiple results:
+          #{ (r.AccountName for r in results).join ', ' } """
+      else if results.length == 1
+        result = results[0]
+        msg.reply """🏢  #{result.AccountName}
+          📄  #{exec_command_api}Code=OpenAccount&AccountID=#{result.AccountNumber}
+          🎫  #{exec_command_api}Code=NewTicket&AccountID=#{result.AccountNumber}"""

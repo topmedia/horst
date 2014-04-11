@@ -94,14 +94,14 @@ module.exports = (robot) ->
       expression: msg.match[2]
       op: 'beginswith'
     autotask_api.query params, (results) ->
-      return msg.reply 'No results.' unless results?
+      return msg.reply 'No results. Try again?' unless results?
 
       if results.length > 1
-        msg.reply """Multiple results:
+        msg.send """Multiple results:
           #{ ([r.FirstName, r.LastName, r.EMailAddress].join ' ' for r in results[0..4]).join "\n" } """
       else if results.length == 1
         result = results[0]
-        msg.reply """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
+        msg.send """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
           📞  #{result.Phone}
           📄  #{exec_command_api}OpenContact/ContactID/#{result.id}
           🎫  #{exec_command_api}NewTicket/Phone/#{result.Phone}"""
@@ -113,13 +113,13 @@ module.exports = (robot) ->
       expression: msg.match[1]
       op: 'beginswith'
     autotask_api.query params, (results) ->
-      return msg.reply 'No results.' unless results?
+      return msg.reply 'No results. Try again?' unless results?
 
       if results.length > 1
-        msg.reply """Multiple results:
+        msg.send """Multiple results:
           #{ (r.AccountName for r in results).join ', ' } """
       else if results.length == 1
         result = results[0]
-        msg.reply """🏢  #{result.AccountName}
+        msg.send """🏢  #{result.AccountName}
           📄  #{exec_command_api}OpenAccount/AccountID/#{result.id}
           🎫  #{exec_command_api}NewTicket/AccountID/#{result.id}"""

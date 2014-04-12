@@ -86,7 +86,7 @@ module.exports = (robot) ->
           "💣  `#{new Date(result.DueDateTime).toDateString()}`\n" +
           "#{exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}"
 
-  robot.hear /^(lastname|email) (.+)/, (msg) ->
+  robot.hear /^(lastname|email) (.+)/i, (msg) ->
     field = if msg.match[1] == 'lastname' then 'lastname' else 'emailaddress'
     params =
       entity: 'contact'
@@ -106,7 +106,7 @@ module.exports = (robot) ->
           📄  #{exec_command_api}OpenContact/ContactID/#{result.id}
           🎫  #{exec_command_api}NewTicket/Phone/#{result.Phone}"""
 
-  robot.hear /^account (.+)/, (msg) ->
+  robot.hear /^account (.+)/i, (msg) ->
     params =
       entity: 'account'
       field: 'accountname'

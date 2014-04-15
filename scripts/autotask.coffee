@@ -21,6 +21,7 @@
 soap     = require 'soap'
 fs       = require 'fs'
 mustache = require 'mustache'
+moment   = require 'moment'
 
 config =
   wsdl: process.env.AUTOTASK_WSDL
@@ -98,6 +99,15 @@ module.exports = (robot) ->
         msg.send (for result in results[0..4]
           "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
           "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}").join("\n")
+
+  robot.hear /^(overdue tickets|!overdue)/, (msg) ->
+    console.log 'overdue!'
+    ticket_list msg,
+      entity: 'ticket'
+      fields: [
+        { field: 'status', op: 'notequal', expression: config.status.resolved }
+        { field: 'duedatetime', op: 'lessthan', expression: moment(new Date).format() }
+      ]
 
   robot.hear /^(critical tickets|!critical)/, (msg) ->
     ticket_list msg,

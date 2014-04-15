@@ -31,6 +31,9 @@ config =
     ticket_series: 29683354
   status:
     new: 1
+    resolved: 5
+  priority:
+    critical: 4
 
 class AutotaskAPI
   constructor: (@robot) ->
@@ -86,23 +89,32 @@ class AutotaskAPI
         object.user = results[0]
         display_template(object)
 
-
 module.exports = (robot) ->
   autotask_api = new AutotaskAPI robot
 
-  robot.hear /^unassigned tickets/, (msg) ->
-    params =
+  ticket_list = (msg, params) ->
+    autotask_api.query params, (results) ->
+      if results
+        msg.send (for result in results[0..4]
+          "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
+          "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}")
+
+  robot.hear /^(critical tickets|!critical)/, (msg) ->
+    ticket_list msg,
+      entity: 'ticket'
+      fields: [
+        { field: 'status', op: 'notequal', expression: config.status.resolved }
+        { field: 'priority', expression: config.priority.critical }
+      ]
+
+  robot.hear /^(unassigned tickets|!unassigned)/, (msg) ->
+    ticket_list msg,
       entity: 'ticket'
       fields: [
         { field: 'status', expression: config.status.new }
         { field: 'assignedresourceid', op: 'isnull' }
         { field: 'queueid', op: 'notequal', expression: config.queues.ticket_series }
       ]
-    autotask_api.query params, (results) ->
-      if results
-        msg.send (for result in results[0..4]
-          "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
-          "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}")
 
   robot.hear /(T\d{8}\.\d+)/, (msg) ->
     params =
@@ -126,7 +138,6 @@ module.exports = (robot) ->
           autotask_api.fetch_user ticket.AssignedResourceID, ticket, display_template
         else
           display_template(ticket)
-
 
   robot.hear /^(lastname|email) (.+)/i, (msg) ->
     field = if msg.match[1] == 'lastname' then 'lastname' else 'emailaddress'

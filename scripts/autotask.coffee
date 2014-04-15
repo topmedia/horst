@@ -26,6 +26,11 @@ config =
   wsdl: process.env.AUTOTASK_WSDL
   user: process.env.AUTOTASK_USER
   pass: process.env.AUTOTASK_PASS
+  exec_command_api: 'http://tpmd.co/at/'
+  queues:
+    ticket_series: 29683354
+  status:
+    new: 1
 
 class AutotaskAPI
   constructor: (@robot) ->
@@ -37,28 +42,29 @@ class AutotaskAPI
         <queryxml>
           <entity>{{entity}}</entity>
           <query>
-          <field>
-            {{field}}
-            <expression op="{{op}}">{{expression}}</expression>
-          </field>
+            {{#fields}}
+            <condition>
+              <field>
+                {{field}}
+                <expression op="{{op}}{{^op}}equals{{/op}}">{{expression}}</expression>
+              </field>
+            </condition>
+            {{/fields}}
           </query>
         </queryxml>
       ]]></sXML>
     </tns:query>
     """
 
-  build_query_xml_template: (entity, field, expression, op) ->
+  build_query_xml_template: (entity, fields) ->
     vars =
       entity: entity
-      field: field
-      expression: expression
-      op: op || 'equals'
+      fields: fields
 
     query_xml = mustache.render @query_xml_template, vars
 
   query: (params, output) ->
-    query_xml = @build_query_xml_template(params.entity, params.field,
-      params.expression, params.op)
+    query_xml = @build_query_xml_template(params.entity, params.fields)
     console.log query_xml
 
     soap.createClient config.wsdl, (err, client) ->
@@ -68,58 +74,98 @@ class AutotaskAPI
       client.query query_xml, (err, result) ->
         output result.queryResult.EntityResults.Entity
 
+  fetch_user: (user_id, object, display_template) ->
+    params =
+      entity: 'resource'
+      fields: [
+        field: 'id'
+        expression: user_id
+      ]
+    @query params, (results) ->
+      if results
+        object.user = results[0]
+        display_template(object)
+
 
 module.exports = (robot) ->
-  exec_command_api = 'http://tpmd.co/at/'
   autotask_api = new AutotaskAPI robot
 
-  robot.hear /(T\d{8}\.\d+)/, (msg) ->
-    params = 
+  robot.hear /^unassigned tickets/, (msg) ->
+    params =
       entity: 'ticket'
-      field: 'ticketnumber'
-      expression: msg.match[1]
+      fields: [
+        { field: 'status', expression: config.status.new }
+        { field: 'assignedresourceid', op: 'isnull' }
+        { field: 'queueid', op: 'notequal', expression: config.queues.ticket_series }
+      ]
     autotask_api.query params, (results) ->
-      result = results[0]
-      if result
-        msg.send "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
-          "⏳  `#{new Date(result.LastActivityDate).toDateString()}` " +
-          "💣  `#{new Date(result.DueDateTime).toDateString()}`\n" +
-          "#{exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}"
+      if results
+        msg.send (for result in results[0..4]
+          "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
+          "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}")
+
+  robot.hear /(T\d{8}\.\d+)/, (msg) ->
+    params =
+      entity: 'ticket'
+      fields: [
+        field: 'ticketnumber'
+        expression: msg.match[1]
+      ]
+    autotask_api.query params, (results) ->
+      if results
+        ticket = results[0]
+
+        display_template = (ticket) ->
+          msg.send "🎫  *#{ticket.TicketNumber}:* #{ticket.Title}\n" +
+            "⏳  `#{new Date(ticket.LastActivityDate).toDateString()}` " +
+            "💣  `#{new Date(ticket.DueDateTime).toDateString()}`\n" +
+            "👦  #{if ticket.user then '@' + ticket.user.FirstName else 'Unassigned'}\n" +
+            "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{ticket.TicketNumber}"
+
+        if ticket.AssignedResourceID
+          autotask_api.fetch_user ticket.AssignedResourceID, ticket, display_template
+        else
+          display_template(ticket)
+
 
   robot.hear /^(lastname|email) (.+)/i, (msg) ->
     field = if msg.match[1] == 'lastname' then 'lastname' else 'emailaddress'
     params =
       entity: 'contact'
-      field: field
-      expression: msg.match[2]
-      op: 'beginswith'
+      fields: [
+        field: field
+        expression: msg.match[2]
+        op: 'beginswith'
+      ]
     autotask_api.query params, (results) ->
       return msg.reply 'No results. Try again?' unless results?
 
       if results.length > 1
         msg.send """Multiple results:
-          #{ (["#{r.FirstName} #{r.LastName}", r.EMailAddress, r.Phone, "#{exec_command_api}OpenContact/ContactID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
+          #{ (["#{r.FirstName} #{r.LastName}", r.EMailAddress, r.Phone, "#{config.exec_command_api}OpenContact/ContactID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
       else if results.length == 1
         result = results[0]
         msg.send """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
           📞  #{result.Phone}
-          📄  #{exec_command_api}OpenContact/ContactID/#{result.id}
-          🎫  #{exec_command_api}NewTicket/Phone/#{result.Phone}"""
+          📄  #{config.exec_command_api}OpenContact/ContactID/#{result.id}
+          🎫  #{config.exec_command_api}NewTicket/Phone/#{result.Phone}"""
 
   robot.hear /^account (.+)/i, (msg) ->
     params =
       entity: 'account'
-      field: 'accountname'
-      expression: msg.match[1]
-      op: 'beginswith'
+      fields: [
+        field: 'accountname'
+        expression: msg.match[1]
+        op: 'beginswith'
+      ]
     autotask_api.query params, (results) ->
       return msg.reply 'No results. Try again?' unless results?
 
       if results.length > 1
         msg.send """Multiple results:
-          #{ ([r.AccountName, "#{exec_command_api}OpenAccount/AccountID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
+          #{ ([r.AccountName, "#{config.exec_command_api}OpenAccount/AccountID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
       else if results.length == 1
         result = results[0]
         msg.send """🏢  #{result.AccountName}
-          📄  #{exec_command_api}OpenAccount/AccountID/#{result.id}
-          🎫  #{exec_command_api}NewTicket/AccountID/#{result.id}"""
+          📄  #{config.exec_command_api}OpenAccount/AccountID/#{result.id}
+          🎫  #{config.exec_command_api}NewTicket/AccountID/#{result.id}"""

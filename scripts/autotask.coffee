@@ -97,7 +97,7 @@ module.exports = (robot) ->
       if results
         msg.send (for result in results[0..4]
           "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
-          "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}")
+          "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}").join("\n")
 
   robot.hear /^(critical tickets|!critical)/, (msg) ->
     ticket_list msg,

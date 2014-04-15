@@ -159,7 +159,7 @@ module.exports = (robot) ->
         msg.send """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
           📞  #{result.Phone}
           📄  #{config.exec_command_api}OpenContact/ContactID/#{result.id}
-          🎫  #{config.exec_command_api}NewTicket/Phone/#{result.Phone}"""
+          🎫  #{config.exec_command_api}NewTicket/Phone/#{result.Phone.replace(/\D/g, '')}"""
 
   robot.hear /^account (.+)/i, (msg) ->
     params =

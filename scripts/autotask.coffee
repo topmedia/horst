@@ -95,10 +95,12 @@ module.exports = (robot) ->
 
   ticket_list = (msg, params) ->
     autotask_api.query params, (results) ->
-      if results
-        msg.send (for result in results[0..4]
-          "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
-          "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}").join("\n")
+      msg.send if results
+          (for result in results[0..4]
+            "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
+            "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}").join("\n")
+        else
+          'No matches.'
 
   robot.hear /^(overdue tickets|!overdue)/, (msg) ->
     console.log 'overdue!'

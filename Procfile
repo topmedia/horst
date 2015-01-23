@@ -1,1 +1,1 @@
-web: bin/hubot -a slack -n franzjosef
+web: bin/hubot -a slack -n horst

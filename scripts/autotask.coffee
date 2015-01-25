@@ -97,13 +97,12 @@ module.exports = (robot) ->
     autotask_api.query params, (results) ->
       msg.send if results
           (for result in results[0..4]
-            "🎫  *#{result.TicketNumber}:* #{result.Title}\n" +
-            "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber}").join("\n")
+            "🎫  *#{result.TicketNumber.$value}:* #{result.Title.$value}\n" +
+            "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{result.TicketNumber.$value}").join("\n")
         else
           'No matches.'
 
   robot.hear /^(overdue tickets|!overdue)/, (msg) ->
-    console.log 'overdue!'
     ticket_list msg,
       entity: 'ticket'
       fields: [
@@ -140,11 +139,11 @@ module.exports = (robot) ->
         ticket = results[0]
 
         display_template = (ticket) ->
-          msg.send "🎫  *#{ticket.TicketNumber}:* #{ticket.Title}\n" +
-            "⏳  `#{new Date(ticket.LastActivityDate).toDateString()}` " +
-            "💣  `#{new Date(ticket.DueDateTime).toDateString()}`\n" +
-            "👦  #{if ticket.user then '@' + ticket.user.FirstName else 'Unassigned'}\n" +
-            "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{ticket.TicketNumber}"
+          msg.send "🎫  *#{ticket.TicketNumber.$value}:* #{ticket.Title.$value}\n" +
+            "⏳  `#{new Date(ticket.LastActivityDate.$value).toDateString()}` " +
+            "💣  `#{new Date(ticket.DueDateTime.$value).toDateString()}`\n" +
+            "👦  #{if ticket.user then '@' + ticket.user.FirstName.$value else 'Unassigned'}\n" +
+            "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{ticket.TicketNumber.$value}"
 
         if ticket.AssignedResourceID
           autotask_api.fetch_user ticket.AssignedResourceID, ticket, display_template
@@ -165,13 +164,13 @@ module.exports = (robot) ->
 
       if results.length > 1
         msg.send """Multiple results:
-          #{ (["#{r.FirstName} #{r.LastName}", r.EMailAddress, r.Phone, "#{config.exec_command_api}OpenContact/ContactID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
+          #{ (["#{r.FirstName.$value} #{r.LastName.$value}", r.EMailAddress.$value, r.Phone.$value, "#{config.exec_command_api}OpenContact/ContactID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
       else if results.length == 1
         result = results[0]
-        msg.send """👦  #{result.FirstName} #{result.LastName} <#{result.EMailAddress}>
-          📞  #{result.Phone}
+        msg.send """👦  #{result.FirstName.$value} #{result.LastName.$value} <#{result.EMailAddress.$value}>
+          📞  #{result.Phone.$value}
           📄  #{config.exec_command_api}OpenContact/ContactID/#{result.id}
-          🎫  #{config.exec_command_api}NewTicket/Phone/#{result.Phone.replace(/\D/g, '')}"""
+          🎫  #{config.exec_command_api}NewTicket/Phone/#{result.Phone.$value.replace(/\D/g, '')}"""
 
   robot.hear /^account (.+)/i, (msg) ->
     params =
@@ -186,9 +185,9 @@ module.exports = (robot) ->
 
       if results.length > 1
         msg.send """Multiple results:
-          #{ ([r.AccountName, "#{config.exec_command_api}OpenAccount/AccountID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
+          #{ ([r.AccountName.$value, "#{config.exec_command_api}OpenAccount/AccountID/#{r.id}"].join ', ' for r in results[0..4]).join "\n" } """
       else if results.length == 1
         result = results[0]
-        msg.send """🏢  #{result.AccountName}
+        msg.send """🏢  #{result.AccountName.$value}
           📄  #{config.exec_command_api}OpenAccount/AccountID/#{result.id}
           🎫  #{config.exec_command_api}NewTicket/AccountID/#{result.id}"""

@@ -146,7 +146,7 @@ module.exports = (robot) ->
             "#{config.exec_command_api}OpenTicketDetail/TicketNumber/#{ticket.TicketNumber.$value}"
 
         if ticket.AssignedResourceID
-          autotask_api.fetch_user ticket.AssignedResourceID, ticket, display_template
+          autotask_api.fetch_user ticket.AssignedResourceID.$value, ticket, display_template
         else
           display_template(ticket)
 

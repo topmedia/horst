@@ -98,7 +98,7 @@ module.exports = (robot) ->
       msg.send if results
           (for result in results[0..4]
             "🎫  *#{result.TicketNumber.$value}:* #{result.Title.$value}\n" +
-            "#{config.exec_command_api}OpenTicketDetail/TicketID/#{result.TicketID.$value}").join("\n")
+            "#{config.exec_command_api}OpenTicketDetail/TicketID/#{result.id}").join("\n")
         else
           'No matches.'
 
@@ -138,13 +138,12 @@ module.exports = (robot) ->
       if results
         ticket = results[0]
 
-        console.log ticket
         display_template = (ticket) ->
           msg.send "🎫  *#{ticket.TicketNumber.$value}:* #{ticket.Title.$value}\n" +
             "⏳  `#{new Date(ticket.LastActivityDate.$value).toDateString()}` " +
             "💣  `#{new Date(ticket.DueDateTime.$value).toDateString()}`\n" +
             "👦  #{if ticket.user then '@' + ticket.user.FirstName.$value else 'Unassigned'}\n" +
-            "#{config.exec_command_api}OpenTicketDetail/TicketID/#{ticket.TicketID.$value}"
+            "#{config.exec_command_api}OpenTicketDetail/TicketID/#{ticket.id}"
 
         if ticket.AssignedResourceID
           autotask_api.fetch_user ticket.AssignedResourceID.$value, ticket, display_template

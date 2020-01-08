@@ -142,7 +142,7 @@ module.exports = (robot) ->
           msg.send "🎫  *#{ticket.TicketNumber.$value}:* #{ticket.Title.$value}\n" +
             "⏳  `#{new Date(ticket.LastActivityDate.$value).toDateString()}` " +
             "💣  `#{new Date(ticket.DueDateTime.$value).toDateString()}`\n" +
-            "👦  #{if ticket.user then '@' + ticket.user.FirstName.$value else 'Unassigned'}\n" +
+            "👦  #{if ticket.user then '@' + ticket.user.FirstName.$value else 'Nicht zugewiesen'}\n" +
             "#{config.exec_command_api}OpenTicketDetail/TicketID/#{ticket.id}"
 
         if ticket.AssignedResourceID

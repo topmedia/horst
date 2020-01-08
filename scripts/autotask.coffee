@@ -138,6 +138,7 @@ module.exports = (robot) ->
       if results
         ticket = results[0]
 
+        console.log ticket
         display_template = (ticket) ->
           msg.send "🎫  *#{ticket.TicketNumber.$value}:* #{ticket.Title.$value}\n" +
             "⏳  `#{new Date(ticket.LastActivityDate.$value).toDateString()}` " +

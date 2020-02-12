@@ -76,6 +76,7 @@ class AutotaskAPI
         config.pass
 
       client.query query_xml, (err, result) ->
+        console.log err
         output result.queryResult.EntityResults.Entity
 
   fetch_user: (user_id, object, display_template) ->
